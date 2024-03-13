@@ -1,26 +1,38 @@
-require('@rushstack/eslint-patch/modern-module-resolution')
-
 module.exports = {
-  root: true,
-  globals: {
-    defineProps: 'readonly',
-    defineExpose: 'readonly',
-    defineEmits: 'readonly',
-    withDefaults: 'readonly',
+  "env": {
+    "browser": true,
+    "es2021": true
   },
-  extends: ['plugin:@typescript-eslint/recommended', 'plugin:vue/vue3-recommended', 'airbnb-base'],
-  parserOptions: {
-    parser: '@typescript-eslint/parser',
-    ecmaVersion: 'latest',
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:vue/vue3-essential",
+    "plugin:prettier/recommended"
+  ],
+  "overrides": [
+    {
+      "env": {
+        "node": true
+      },
+      "files": [".eslintrc.{js,cjs}"],
+      "parserOptions": {
+        "sourceType": "script"
+      }
+    }
+  ],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "parser": "@typescript-eslint/parser",
+    "sourceType": "module"
   },
-  rules: {
-    // 关闭函数名后面必须有空格的验证
-    'space-before-function-paren': 0,
-    // 关闭强制不变的变量使用 const, 因为自动格式化 有时候会把 let 变成 const
-    'perfer-const': 0,
-    // 允许行尾分号
-    semi: 0,
-    // 允许尾后逗号
-    'comma-dangle': 0,
-  }
+  "plugins": [
+    "@typescript-eslint",
+    "vue",
+    "prettier"
+  ],
+  "rules": {
+    "prettier/prettier": "error",
+    "arrow-body-style": "off",
+    "prefer-arrow-callback": "off"
+}
 }
