@@ -9,8 +9,10 @@ import './styles/reset.scss'
 import './assets/tailwindcss.css'
 import App from './App.vue'
 import router from './router'
+import pinia from './store'
 
 const app = createApp(App)
+app.use(pinia)
 app.use(router)
 app.use(ElementPlus, { locale: zhCn })
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

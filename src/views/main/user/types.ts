@@ -6,11 +6,16 @@ export type queryParamsType = {
 }
 
 export interface userDataType {
-  id: number
+  id?: number
   userName: string
   nickName: string
   phoneNumber: string
   email: string
-  avatar: string
+  avatar?: string
   sex: number
+}
+
+export interface userListType {
+  count: number
+  list: userDataType[]
 }

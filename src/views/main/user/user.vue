@@ -66,8 +66,8 @@
         </el-form-item>
         <el-form-item label="性别" prop="sex">
           <el-radio-group v-model="form.sex">
-            <el-radio :value="0">男</el-radio>
-            <el-radio :value="1">女</el-radio>
+            <el-radio :value="1">男</el-radio>
+            <el-radio :value="0">女</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -82,7 +82,6 @@
 </template>
 
 <script setup lang="ts">
-import axios from 'axios'
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -90,6 +89,7 @@ import { Delete, Edit, Plus } from '@element-plus/icons-vue'
 import { queryParamsType, userDataType } from './types.ts'
 import { validateMobile, validateEmail } from '@/utils/validFun.ts'
 import pagination from '@/components/pagination/pagination.vue'
+import { listByUser, editUser, getUserById, addUser, deleteUser } from '@/api/user/user.ts'
 
 const queryParams = ref<Partial<queryParamsType>>({
   userName: undefined,
@@ -131,12 +131,12 @@ const columns = ref([
 const total = ref(10)
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
-const form = ref<Partial<userDataType>>({
+const form = ref<userDataType>({
   userName: '',
   nickName: '',
   phoneNumber: '',
   email: '',
-  sex: 0
+  sex: 1
 })
 const formValueRule = ref<FormRules<userDataType>>({
   userName: [
@@ -185,16 +185,11 @@ const formValueRule = ref<FormRules<userDataType>>({
 })
 const formValueRef = ref<FormInstance>()
 
-const getList = () => {
-  axios({
-    url: 'http://localhost:3000/user',
-    method: 'GET',
-    params: queryParams.value
-  }).then((res) => {
-    const { data } = res
-    userList.value = data.data.list
-    total.value = data.data.count
-  })
+const getList = async () => {
+  const [_, data] = await listByUser(queryParams.value)
+  const { list, count } = data
+  userList.value = list
+  total.value = count
 }
 
 const submitQueryForm = () => {
@@ -205,22 +200,30 @@ const resetQueryForm = () => {
   queryParams.value = {}
   getList()
 }
+const resetForm = () => {
+  formValueRef.value?.resetFields()
+  form.value = { email: '', nickName: '', phoneNumber: '', sex: 1, userName: '' }
+}
 const handleAdd = () => {
   dialogTitle.value = '添加用户'
-  formValueRef.value?.resetFields()
-  form.value = {}
+  resetForm()
   dialogVisible.value = true
 }
-const handleEdit = (row: userDataType) => {
+const handleEdit = async (row: userDataType) => {
   dialogTitle.value = '修改用户'
-  axios({
-    url: `http://localhost:3000/user/${row.id}`,
-    method: 'GET'
-  }).then((res) => {
-    const { data } = res
-    form.value = data.data
+  if (row.id != null) {
+    const [_, res] = await getUserById(row.id)
+    form.value = res
     dialogVisible.value = true
+  }
+}
+const submitRefreshData = async (err: boolean, res: string) => {
+  ElMessage({
+    message: `${res}`,
+    type: err ? 'error' : 'success'
   })
+  await getList()
+  dialogVisible.value = false
 }
 const handleDelete = (row: userDataType) => {
   ElMessageBox.confirm(`此操作会删除用户名为${row.userName}的数据, 是否继续?`, '警告', {
@@ -228,18 +231,11 @@ const handleDelete = (row: userDataType) => {
     cancelButtonText: '取消',
     type: 'warning'
   })
-    .then(() => {
-      axios({
-        url: `http://localhost:3000/user/${row.id}`,
-        method: 'DELETE'
-      }).then((res) => {
-        const { data } = res
-        ElMessage({
-          type: 'success',
-          message: `${data.message}`
-        })
-        getList()
-      })
+    .then(async () => {
+      if (row.id != null) {
+        const [err, res] = await deleteUser(row.id)
+        await submitRefreshData(err, typeof res === 'string' ? res : '')
+      }
     })
     .catch(() => {
       ElMessage({
@@ -248,49 +244,13 @@ const handleDelete = (row: userDataType) => {
       })
     })
 }
-const handleOnSubmit = () => {
+const handleOnSubmit = async () => {
   if (form.value.id) {
-    axios({
-      url: `http://localhost:3000/user/${form.value.id}`,
-      method: 'PATCH',
-      data: form.value
-    }).then((res) => {
-      const { data } = res
-      if (data.code === 200) {
-        ElMessage({
-          message: `${data.message}`,
-          type: 'success'
-        })
-        getList()
-        dialogVisible.value = false
-      } else {
-        ElMessage({
-          message: `${data.message}`,
-          type: 'error'
-        })
-      }
-    })
+    const [err, res] = await editUser(form.value, form.value.id)
+    await submitRefreshData(err, typeof res === 'string' ? res : '')
   } else {
-    axios({
-      url: 'http://localhost:3000/user',
-      method: 'POST',
-      data: form.value
-    }).then((res) => {
-      const { data } = res
-      if (data.code === 200) {
-        ElMessage({
-          message: `${data.message}`,
-          type: 'success'
-        })
-        getList()
-        dialogVisible.value = false
-      } else {
-        ElMessage({
-          message: `${data.message}`,
-          type: 'error'
-        })
-      }
-    })
+    const [err, res] = await addUser(form.value)
+    await submitRefreshData(err, typeof res === 'string' ? res : '')
   }
 }
 getList()
